@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>留学FAQチャットボット</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Helvetica Neue', sans-serif;
+      background: linear-gradient(120deg, #e0f7fa, #ffffff);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      color: #2c3e50;
+    }
+    header {
+      background-color: #006064;
+      color: white;
+      padding: 16px;
+      font-size: 1.4rem;
+      text-align: center;
+    }
+    .chat-container {
+      flex: 1;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .chat {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .message {
+      padding: 10px 15px;
+      border-radius: 16px;
+      margin: 8px 0;
+      max-width: 80%;
+      word-wrap: break-word;
+      line-height: 1.5;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .bot {
+      background: #e0f2f1;
+      align-self: flex-start;
+    }
+    .user {
+      background: #009688;
+      color: white;
+      align-self: flex-end;
+    }
+    .input-area {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+    .input-area button {
+      margin-left: 10px;
+      background-color: #00796b;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .input-area button:hover {
+      background-color: #00695c;
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>留学に関するよくある質問</header>
+
+  <div class="chat-container">
+    <div class="chat" id="chat">
+      <div class="message bot">こんにちは！留学に関する質問があれば、お気軽にどうぞ。</div>
+    </div>
+    <div class="input-area">
+      <input type="text" id="userInput" placeholder="質問を入力してください..." />
+      <button onclick="sendMessage()">送信</button>
+    </div>
+  </div>
+
+  <footer>&copy; 2025 留学サポート | 全ブラウザ対応</footer>
+
+  <script>
+    let faqData = [];
+
+    function normalizeText(text) {
+      return text.toLowerCase()
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        .replace(/\\s+/g, '')
+        .replace(/[ぁ-ん]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60))
+        .trim();
+    }
+
+    async function loadFaqData() {
+      try {
+        const response = await fetch('faq.json');
+        if (!response.ok) throw new Error("読み込み失敗");
+        faqData = await response.json();
+      } catch (err) {
+        console.error("faq.jsonの読み込みエラー:", err);
+        faqData = [];
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const chat = document.getElementById("chat");
+      const query = input.value.trim();
+      if (!query) return;
+
+      const userDiv = document.createElement("div");
+      userDiv.className = "message user";
+      userDiv.textContent = query;
+      chat.appendChild(userDiv);
+
+      const answer = findAnswer(query);
+      const botDiv = document.createElement("div");
+      botDiv.className = "message bot";
+      botDiv.textContent = answer;
+      chat.appendChild(botDiv);
+
+      chat.scrollTop = chat.scrollHeight;
+      input.value = '';
+    }
+
+    function findAnswer(query) {
+      const normQuery = normalizeText(query);
+      for (let item of faqData) {
+        if (normalizeText(item.question) === normQuery) return item.answer;
+        if (normalizeText(item.question).includes(normQuery)) return item.answer;
+        for (let kw of item.keywords || []) {
+          const normKw = normalizeText(kw);
+          if (normKw.includes(normQuery) || normQuery.includes(normKw)) return item.answer;
+        }
+      }
+      return "申し訳ありません、その質問にはまだ対応していません。";
+    }
+
+    document.getElementById("userInput").addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    document.addEventListener("DOMContentLoaded", loadFaqData);
+  </script>
+</body>
+</html>
