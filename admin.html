@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FAQ管理画面</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background: #f2f4f5;
+      margin: 0;
+      padding: 20px;
+      color: #2c3e50;
+    }
+    h1 {
+      text-align: center;
+      color: #006064;
+    }
+    .top-buttons {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .top-buttons button {
+      margin: 6px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: #009688;
+      color: white;
+    }
+    .top-buttons button:hover {
+      background-color: #00796b;
+    }
+    .faq-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .keyword-tag {
+      background: #4db6ac;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 14px;
+      font-size: 0.85rem;
+    }
+    .keyword-tag button {
+      margin-left: 6px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    .actions {
+      text-align: right;
+    }
+    .delete-btn {
+      background-color: #e53935;
+    }
+    .delete-btn:hover {
+      background-color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <h1>FAQ管理画面</h1>
+
+  <div class="top-buttons">
+    <button onclick="addFaq()">＋ FAQ追加</button>
+    <button onclick="downloadJson()">faq.jsonとして保存</button>
+    <button onclick="window.open('index.html', '_blank')">ユーザー画面を表示</button>
+  </div>
+
+  <div id="faqContainer"></div>
+
+  <script>
+    let faqData = [
+      {
+        question: "留学費用について教えてください",
+        keywords: ["費用", "料金", "お金", "予算", "値段", "コスト", "いくら"],
+        answer: "留学費用は国や期間によって異なります。短期（1ヶ月）の語学留学で約50〜80万円、半年〜1年の長期留学で約150〜300万円が目安です。"
+      },
+      {
+        question: "どの国に留学できますか？",
+        keywords: ["国", "留学先", "どこ", "地域", "場所", "海外", "国々"],
+        answer: "主な留学先はアメリカ、カナダ、イギリス、オーストラリア、ニュージーランドなどの英語圏を中心に、フランス、ドイツ、韓国なども対応しています。"
+      },
+      {
+        question: "ビザは必要ですか？",
+        keywords: ["ビザ", "査証", "VISA", "パスポート", "申請", "手続き", "必要"],
+        answer: "90日以上の滞在を伴う留学には基本的にビザが必要です。国によって条件が異なるため、詳細はご相談ください。"
+      }
+    ];
+
+    function renderFaqs() {
+      const container = document.getElementById("faqContainer");
+      container.innerHTML = "";
+      faqData.forEach((faq, index) => {
+        const div = document.createElement("div");
+        div.className = "faq-card";
+        div.innerHTML = `
+          <input type="text" placeholder="質問" value="${faq.question}" oninput="updateField(${index}, 'question', this.value)">
+          <div class="keywords" id="keywords-${index}">
+            ${(faq.keywords || []).map((kw, i) => `
+              <span class="keyword-tag">${kw}
+                <button onclick="removeKeyword(${index}, ${i})">×</button>
+              </span>`).join("")}
+          </div>
+          <input type="text" placeholder="キーワードを追加" onkeypress="handleKeywordInput(event, ${index})">
+          <textarea placeholder="回答" oninput="updateField(${index}, 'answer', this.value)">${faq.answer}</textarea>
+          <div class="actions">
+            <button class="delete-btn" onclick="deleteFaq(${index})">削除</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updateField(index, field, value) {
+      faqData[index][field] = value;
+    }
+
+    function handleKeywordInput(e, index) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val) {
+          faqData[index].keywords.push(val);
+          renderFaqs();
+        }
+        e.target.value = "";
+      }
+    }
+
+    function removeKeyword(faqIndex, keywordIndex) {
+      faqData[faqIndex].keywords.splice(keywordIndex, 1);
+      renderFaqs();
+    }
+
+    function deleteFaq(index) {
+      if (confirm("このFAQを削除しますか？")) {
+        faqData.splice(index, 1);
+        renderFaqs();
+      }
+    }
+
+    function addFaq() {
+      faqData.push({ question: "", keywords: [], answer: "" });
+      renderFaqs();
+    }
+
+    function downloadJson() {
+      const blob = new Blob([JSON.stringify(faqData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "faq.json";
+      a.click();
+    }
+
+    renderFaqs();
+  </script>
+</body>
+</html>
